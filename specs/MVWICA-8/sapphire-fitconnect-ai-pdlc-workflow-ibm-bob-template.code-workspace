@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "../.."
+		},
+		{
+			"path": "../../../sapphire-ai-pdlc-workflow-ui"
+		},
+		{
+			"path": "../../../Sapphire-Fitconnect"
+		}
+	],
+	"settings": {}
+}

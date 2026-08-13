@@ -7,22 +7,22 @@ Generated: 2026-08-13
 
 ## Queue
 
-- [ ] sapphire-kafka-pipeline / Phase 1: Setup (Shared Infrastructure)
-- [ ] sapphire-user-service / Phase 1: Setup (Shared Infrastructure)
-- [ ] sapphire-event-ingestion-api / Phase 2: Foundational (Blocking Prerequisites)
-- [ ] sapphire-kafka-pipeline / Phase 2: Foundational (Blocking Prerequisites)
-- [ ] sapphire-event-ingestion-api / Phase 3: User Story 1 — Smart Device Temperature Ingestion (Priority: P1) 🎯 MVP
-- [ ] sapphire-kafka-pipeline / Phase 4: User Story 2 — Temperature Data Persisted to Timeseries Store (Priority: P2)
-- [ ] sapphire-charting-api / Phase 5: User Story 3 — Temperature Trend Charts and Reporting (Priority: P3)
-- [ ] sapphire-user-service / Phase 6: User Story 4 — Temperature Metric in the Health Dashboard UI (Priority: P4)
-- [ ] sapphire-bff-api / Phase 6: User Story 4 — Temperature Metric in the Health Dashboard UI (Priority: P4)
-- [ ] Sapphire / Phase 6: User Story 4 — Temperature Metric in the Health Dashboard UI (Priority: P4)
-- [ ] sapphire-kafka-streams-consumer / Phase 7: User Story 5 — Temperature Threshold Alerting (Priority: P5)
-- [ ] sapphire-playwright / Phase 8: Polish & Cross-Cutting Concerns
-- [ ] sapphire-event-ingestion-api / Phase 8: Polish & Cross-Cutting Concerns
-- [ ] sapphire-charting-api / Phase 8: Polish & Cross-Cutting Concerns
-- [ ] sapphire-kafka-streams-consumer / Phase 8: Polish & Cross-Cutting Concerns
-- [ ] sapphire-bff-api / Phase 8: Polish & Cross-Cutting Concerns
+- [x] sapphire-kafka-pipeline / Phase 1: Setup (Shared Infrastructure)
+- [x] sapphire-user-service / Phase 1: Setup (Shared Infrastructure)
+- [x] sapphire-event-ingestion-api / Phase 2: Foundational (Blocking Prerequisites)
+- [x] sapphire-kafka-pipeline / Phase 2: Foundational (Blocking Prerequisites)
+- [x] sapphire-event-ingestion-api / Phase 3: User Story 1 — Smart Device Temperature Ingestion (Priority: P1) 🎯 MVP
+- [x] sapphire-kafka-pipeline / Phase 4: User Story 2 — Temperature Data Persisted to Timeseries Store (Priority: P2)
+- [x] sapphire-charting-api / Phase 5: User Story 3 — Temperature Trend Charts and Reporting (Priority: P3)
+- [x] sapphire-user-service / Phase 6: User Story 4 — Temperature Metric in the Health Dashboard UI (Priority: P4)
+- [x] sapphire-bff-api / Phase 6: User Story 4 — Temperature Metric in the Health Dashboard UI (Priority: P4)
+- [x] Sapphire / Phase 6: User Story 4 — Temperature Metric in the Health Dashboard UI (Priority: P4)
+- [x] sapphire-kafka-streams-consumer / Phase 7: User Story 5 — Temperature Threshold Alerting (Priority: P5)
+- [x] sapphire-playwright / Phase 8: Polish & Cross-Cutting Concerns
+- [x] sapphire-event-ingestion-api / Phase 8: Polish & Cross-Cutting Concerns
+- [x] sapphire-charting-api / Phase 8: Polish & Cross-Cutting Concerns
+- [x] sapphire-kafka-streams-consumer / Phase 8: Polish & Cross-Cutting Concerns
+- [x] sapphire-bff-api / Phase 8: Polish & Cross-Cutting Concerns
 
 ## Dependency Notes
 
