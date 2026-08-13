@@ -7,7 +7,7 @@
 - Last Updated: 2026-08-12
 
 ## CURRENT_STAGE
-PHASE_6_PENDING
+PHASE_7_PENDING
 
 ## Completed Phases
 - [x] Phase 1: Constitution Verified
@@ -23,9 +23,9 @@ PHASE_6_PENDING
 - [x] Phase 4A: Plan PR Raised
 - [x] Phase 4B: Plan Approved
 - [x] Phase 5: Child Stories Created
-- [ ] Phase 6A: Tasks Entry Gates
-- [ ] Phase 6B: Tasks
-- [ ] CHECKPOINT 2B: Submitter Tasks Review
+- [x] Phase 6A: Tasks Entry Gates
+- [x] Phase 6B: Tasks
+- [x] CHECKPOINT 2B: Submitter Tasks Review
 - [ ] Phase 7A: Analysis Entry Gates
 - [ ] Phase 7B: Analyze
 - [ ] Phase 7C: Tasks PR Raised
