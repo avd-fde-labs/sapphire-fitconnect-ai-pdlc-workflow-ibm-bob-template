@@ -4,10 +4,10 @@
 - Story ID: MVWICA-8
 - Story Title: Add Support for Body Temperature Metric Ingestion, Storage, and Reporting
 - Started: 2026-08-12
-- Last Updated: 2026-08-13
+- Last Updated: 2026-08-14
 
 ## CURRENT_STAGE
-PHASE_9_PENDING
+COMPLETE
 
 ## Completed Phases
 - [x] Phase 1: Constitution Verified
@@ -37,8 +37,8 @@ PHASE_9_PENDING
 - [x] Phase 8C: Implement
 - [x] Phase 8D: Jira Stories Updated
 - [x] CHECKPOINT 4: Validation Complete
-- [ ] Phase 9: Raise PRs
-- [ ] CHECKPOINT 5: PRs Created
+- [x] Phase 9: Raise PRs
+- [x] CHECKPOINT 5: PRs Created
 
 ## Key Data
 - Spec PR: https://github.com/avd-fde-labs/sapphire-fitconnect-ai-pdlc-workflow-ibm-bob-template/pull/1
@@ -47,7 +47,15 @@ PHASE_9_PENDING
 - Plan Approval (`fde`): avdorp — merged 2026-08-13T14:07:25Z
 - Tasks PR: https://github.com/avd-fde-labs/sapphire-fitconnect-ai-pdlc-workflow-ibm-bob-template/pull/3
 - Tasks Approval (`fde`): avdorp — merged 2026-08-13T14:45:17Z
-- Implementation PRs: (pending)
+- Implementation PRs:
+  - MVWICA-9 (sapphire-event-ingestion-api): https://github.com/avd-fde-labs/sapphire-event-ingestion-api/pull/1
+  - MVWICA-10 (sapphire-kafka-pipeline): https://github.com/avd-fde-labs/sapphire-kafka-pipeline/pull/1
+  - MVWICA-11 (sapphire-charting-api): https://github.com/avd-fde-labs/sapphire-charting-api/pull/1
+  - MVWICA-12 (sapphire-bff-api): https://github.com/avd-fde-labs/sapphire-bff-api/pull/1
+  - MVWICA-13 (Sapphire UI): https://github.com/avd-fde-labs/Sapphire/pull/1
+  - MVWICA-14 (sapphire-kafka-streams-consumer): https://github.com/avd-fde-labs/sapphire-kafka-streams-consumer/pull/1
+  - MVWICA-15 (sapphire-user-service): https://github.com/avd-fde-labs/sapphire-user-service/pull/1
+  - MVWICA-8 (orchestrator): https://github.com/avd-fde-labs/sapphire-fitconnect-ai-pdlc-workflow-ibm-bob-template/pull/4
 
 ## Child Stories
 sapphire-event-ingestion-api: MVWICA-9
