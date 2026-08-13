@@ -1,0 +1,124 @@
+openapi: "3.1.0"
+info:
+  title: Temperature Chart API
+  version: "1.0.0"
+  description: |
+    Returns aggregated body temperature trend data for a user over a given time range.
+    Called by the BFF; JWT-protected at the BFF layer. Direct callers must supply
+    a valid service-to-service token.
+
+servers:
+  - url: http://localhost:8002
+    description: Local development
+
+paths:
+  /charts/temperature:
+    get:
+      summary: Get temperature trend chart data
+      operationId: getTemperatureChart
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: range
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [DAY, WEEK, MONTH]
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2026-08-01"
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2026-08-12"
+        - name: deviceSourceId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter results to a specific device source
+        - name: unit
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [CELSIUS, FAHRENHEIT]
+          description: Preferred display unit (defaults to CELSIUS if omitted)
+      responses:
+        "200":
+          description: Temperature chart data (may have empty dataPoints if no data in range)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemperatureChartResponse"
+        "400":
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    TemperatureDataPoint:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Start of the aggregation interval
+        minValue:
+          type: number
+          format: double
+        maxValue:
+          type: number
+          format: double
+        avgValue:
+          type: number
+          format: double
+        recordCount:
+          type: integer
+
+    TemperatureChartResponse:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        range:
+          type: string
+          enum: [DAY, WEEK, MONTH]
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+        unit:
+          type: string
+          enum: [CELSIUS, FAHRENHEIT]
+        dataPoints:
+          type: array
+          items:
+            $ref: "#/components/schemas/TemperatureDataPoint"
+          description: Empty array if no data exists for the requested range
+
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+        code:
+          type: string

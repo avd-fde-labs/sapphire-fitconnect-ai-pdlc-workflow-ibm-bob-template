@@ -1,0 +1,116 @@
+# GraphQL BFF Schema Additions — MVWICA-8
+
+# These SDL additions are applied to sapphire-bff-api.
+# Additive only — no existing types are modified.
+
+# ──────────────────────────────────────────────
+# Scalars (reuse existing DateTime scalar if present; add if absent)
+# ──────────────────────────────────────────────
+
+# scalar DateTime   # assumed already defined in the BFF schema
+
+# ──────────────────────────────────────────────
+# Enums
+# ──────────────────────────────────────────────
+
+enum TemperatureUnit {
+  CELSIUS
+  FAHRENHEIT
+}
+
+enum ChartRange {
+  DAY
+  WEEK
+  MONTH
+}
+
+# ──────────────────────────────────────────────
+# Types
+# ──────────────────────────────────────────────
+
+"""A single aggregated data point in a temperature trend chart."""
+type TemperatureDataPoint {
+  """Start of the aggregation interval (ISO-8601)."""
+  timestamp: String!
+  """Minimum temperature value in the interval."""
+  minValue: Float!
+  """Maximum temperature value in the interval."""
+  maxValue: Float!
+  """Average temperature value in the interval."""
+  avgValue: Float!
+  """Number of readings contributing to this aggregate."""
+  recordCount: Int!
+}
+
+"""Aggregated temperature trend data for a user over a time range."""
+type TemperatureChartData {
+  userId: ID!
+  range: ChartRange!
+  """Start date of the queried range (ISO-8601 date string)."""
+  from: String!
+  """End date of the queried range (ISO-8601 date string)."""
+  to: String!
+  """Unit of the returned values."""
+  unit: TemperatureUnit!
+  """Ordered list of data points. Empty if no data exists for the range."""
+  dataPoints: [TemperatureDataPoint!]!
+}
+
+# ──────────────────────────────────────────────
+# Query extensions
+# ──────────────────────────────────────────────
+
+extend type Query {
+  """
+  Returns body temperature trend chart data for a user over a given time range.
+  Requires a valid Keycloak JWT. The authenticated user may only query their own data
+  unless they hold an admin role.
+  """
+  temperatureChart(
+    userId: ID!
+    range: ChartRange!
+    "ISO-8601 date string (e.g. '2026-08-01')"
+    from: String!
+    "ISO-8601 date string (e.g. '2026-08-12')"
+    to: String!
+    "Optional: filter data points to a specific device source"
+    deviceSourceId: String
+    "Optional: preferred display unit. Defaults to the user's stored preference, then CELSIUS."
+    unit: TemperatureUnit
+  ): TemperatureChartData!
+}
+
+# ──────────────────────────────────────────────
+# Mutation extensions
+# ──────────────────────────────────────────────
+
+input UpdateTemperatureUnitPreferenceInput {
+  """The unit to store as the user's temperature display preference."""
+  unit: TemperatureUnit!
+}
+
+type UpdateTemperatureUnitPreferencePayload {
+  """The newly stored unit, or null if the update failed."""
+  unit: TemperatureUnit
+  """User-facing validation errors. Empty on success."""
+  errors: [UserError!]!
+}
+
+extend type Mutation {
+  """
+  Persists the authenticated user's preferred temperature display unit to their profile.
+  Applies to all future temperature chart views across devices.
+  """
+  updateTemperatureUnitPreference(
+    input: UpdateTemperatureUnitPreferenceInput!
+  ): UpdateTemperatureUnitPreferencePayload!
+}
+
+# ──────────────────────────────────────────────
+# UserError (add only if not already defined in the BFF schema)
+# ──────────────────────────────────────────────
+
+# type UserError {
+#   field: String
+#   message: String!
+# }
