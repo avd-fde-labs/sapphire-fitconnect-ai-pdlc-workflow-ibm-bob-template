@@ -1,0 +1,212 @@
+openapi: "3.1.0"
+info:
+  title: Temperature Readings Ingestion API
+  version: "1.0.0"
+  description: |
+    Accepts body temperature readings from Device Submitters (smart devices and
+    third-party health APIs). Authenticates via X-API-Key header. Rate-limited to
+    100 requests per minute per key.
+
+servers:
+  - url: http://localhost:8001
+    description: Local development
+
+security:
+  - ApiKeyAuth: []
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    TemperatureUnit:
+      type: string
+      enum: [CELSIUS, FAHRENHEIT]
+
+    TemperatureReading:
+      type: object
+      required: [user_id, measured_at, value, unit, device_source_id, ingestion_source]
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          description: Platform user identifier
+        measured_at:
+          type: string
+          format: date-time
+          description: ISO-8601 measurement timestamp (device time). Must not be more than 5 minutes in the future.
+        value:
+          type: number
+          format: double
+          description: Temperature reading value in the specified unit
+        unit:
+          $ref: "#/components/schemas/TemperatureUnit"
+        device_source_id:
+          type: string
+          description: Unique identifier of the submitting device or partner API
+        ingestion_source:
+          type: string
+          example: "api"
+          description: Source category (e.g., "api", "batch")
+        measurement_method:
+          type: string
+          nullable: true
+          example: "oral"
+          description: Optional measurement method (oral, axillary, tympanic, etc.)
+
+    TemperatureBatchRequest:
+      type: object
+      required: [readings]
+      properties:
+        readings:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/TemperatureReading"
+
+    SingleIngestionResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "accepted"
+        event_id:
+          type: string
+          format: uuid
+
+    BatchIngestionResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+        accepted:
+          type: integer
+        rejected:
+          type: integer
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              index:
+                type: integer
+              status:
+                type: string
+                enum: [accepted, rejected]
+              event_id:
+                type: string
+                format: uuid
+                nullable: true
+              error:
+                type: string
+                nullable: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+        code:
+          type: string
+        fields:
+          type: array
+          nullable: true
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+
+paths:
+  /temperature-readings:
+    post:
+      summary: Submit a single temperature reading
+      operationId: ingestTemperatureReading
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TemperatureReading"
+      responses:
+        "200":
+          description: Reading accepted and published to Kafka
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SingleIngestionResponse"
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Validation failure (out-of-range value, missing fields, future timestamp)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Rate limit exceeded (100 req/min per API key)
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Seconds until the rate limit window resets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Kafka broker temporarily unavailable — caller should retry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /temperature-readings/batch:
+    post:
+      summary: Submit a batch of temperature readings (up to 100)
+      operationId: ingestTemperatureReadingBatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TemperatureBatchRequest"
+      responses:
+        "200":
+          description: Batch processed; per-record results returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchIngestionResponse"
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Rate limit exceeded
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Kafka broker temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
