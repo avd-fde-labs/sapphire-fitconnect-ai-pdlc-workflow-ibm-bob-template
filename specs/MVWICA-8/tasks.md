@@ -14,11 +14,11 @@
 
 **Purpose**: Environment variables, Kafka topic provisioning, and PostgreSQL DDL that must exist before any story can be validated end-to-end.
 
-- [ ] T001 Create Kafka topic `health-metrics.temperature` with appropriate partition count and retention — repo: `sapphire-kafka-pipeline` (ops/topic config or README)
-- [ ] T002 [P] Create `temperature_readings` TimescaleDB hypertable per DDL in `specs/MVWICA-8/data-model.md` — repo: `sapphire-kafka-pipeline` migration or init SQL
-- [ ] T003 [P] Create `temperature_daily_rollups` continuous aggregate per DDL in `specs/MVWICA-8/data-model.md` — repo: `sapphire-kafka-pipeline` migration or init SQL
-- [ ] T004 [P] Add `temperature_unit_preference` column to `users` table per DDL in `specs/MVWICA-8/data-model.md` — repo: `sapphire-user-service` (Flyway/Liquibase migration)
-- [ ] T005 [P] Add environment variables `TEMP_RANGE_MIN_C`, `TEMP_RANGE_MAX_C`, `TEMP_RANGE_MIN_F`, `TEMP_RANGE_MAX_F`, `TEMP_HIGH_ALERT_C`, `TEMP_LOW_ALERT_C` to local Docker Compose and service env templates — all affected repos
+- [x] T001 Create Kafka topic `health-metrics.temperature` with appropriate partition count and retention — repo: `sapphire-kafka-pipeline` (ops/topic config or README)
+- [x] T002 [P] Create `temperature_readings` TimescaleDB hypertable per DDL in `specs/MVWICA-8/data-model.md` — repo: `sapphire-kafka-pipeline` migration or init SQL
+- [x] T003 [P] Create `temperature_daily_rollups` continuous aggregate per DDL in `specs/MVWICA-8/data-model.md` — repo: `sapphire-kafka-pipeline` migration or init SQL
+- [x] T004 [P] Add `temperature_unit_preference` column to `users` table per DDL in `specs/MVWICA-8/data-model.md` — repo: `sapphire-user-service` (Flyway/Liquibase migration)
+- [x] T005 [P] Add environment variables `TEMP_RANGE_MIN_C`, `TEMP_RANGE_MAX_C`, `TEMP_RANGE_MIN_F`, `TEMP_RANGE_MAX_F`, `TEMP_HIGH_ALERT_C`, `TEMP_LOW_ALERT_C` to local Docker Compose and service env templates — all affected repos
 
 **Checkpoint**: Topic, hypertable, rollup aggregate, and user table column exist. Env vars defined. Proceed to Foundational.
 
@@ -30,9 +30,9 @@
 
 **⚠️ CRITICAL**: No user story work past US1 (ingestion) can be validated end-to-end until this phase is complete.
 
-- [ ] T006 Register `TemperatureReadingEvent` Avro schema in Confluent Schema Registry using `specs/MVWICA-8/contracts/kafka-avro-schema.json` — repo: `sapphire-event-ingestion-api` (schema registration script or README step)
-- [ ] T007 Deploy `temperature-sink` Kafka Connect connector using config in `specs/MVWICA-8/contracts/` (create `connectors/temperature-sink.json`) — repo: `sapphire-kafka-pipeline` `connectors/temperature-sink.json`
-- [ ] T008 [P] Verify end-to-end pipeline: publish test Avro event to topic, confirm record appears in `temperature_readings` within 10 s — repo: `sapphire-kafka-pipeline` (manual quickstart step 6)
+- [x] T006 Register `TemperatureReadingEvent` Avro schema in Confluent Schema Registry using `specs/MVWICA-8/contracts/kafka-avro-schema.json` — repo: `sapphire-event-ingestion-api` (schema registration script or README step)
+- [x] T007 Deploy `temperature-sink` Kafka Connect connector using config in `specs/MVWICA-8/contracts/` (create `connectors/temperature-sink.json`) — repo: `sapphire-kafka-pipeline` `connectors/temperature-sink.json`
+- [x] T008 [P] Verify end-to-end pipeline: publish test Avro event to topic, confirm record appears in `temperature_readings` within 10 s — repo: `sapphire-kafka-pipeline` (manual quickstart step 6)
 
 **Checkpoint**: Avro schema registered. Connector deployed. Pipeline verified. All user stories can now proceed.
 
@@ -48,18 +48,18 @@
 
 ### Implementation for User Story 1
 
-- [ ] T009 [P] [US1] Create Pydantic v2 models `TemperatureReading` and `TemperatureBatchRequest` — repo: `sapphire-event-ingestion-api` `src/models/temperature.py`
-- [ ] T010 [P] [US1] Create `TemperatureConfig` dataclass (physiological range, rate limit) bound to env vars via Pydantic `BaseSettings` — repo: `sapphire-event-ingestion-api` `src/config/temperature_config.py`
-- [ ] T011 [P] [US1] Implement `ApiKeyValidator` FastAPI dependency: Redis hash lookup of hashed API key → user_id; return HTTP 401 if missing/invalid — repo: `sapphire-event-ingestion-api` `src/dependencies/api_key.py`
-- [ ] T012 [P] [US1] Implement `RateLimiter` FastAPI dependency: Redis sliding window (INCR+EXPIRE per minute bucket per key), raise HTTP 429 with `Retry-After` on breach — repo: `sapphire-event-ingestion-api` `src/dependencies/rate_limiter.py`
-- [ ] T013 [US1] Implement `TemperatureProducer`: Avro-encode `TemperatureReadingEvent` and publish to `health-metrics.temperature`; on broker failure catch `confluent_kafka.KafkaException` (or `confluent_kafka.KafkaError`) and re-raise as `KafkaUnavailableError`; bare `except:` is FORBIDDEN per constitution §I Python — repo: `sapphire-event-ingestion-api` `src/kafka/temperature_producer.py`
-- [ ] T014 [US1] Implement `TemperatureService`: validate value against configured range (FR-003), reject future timestamps >5 min (FR-007), accept historical timestamps (FR-008), call producer; emit `temperature_readings_ingested_total` and `temperature_readings_rejected_total` OTEL counters (FR-028/029) — repo: `sapphire-event-ingestion-api` `src/services/temperature_service.py`
-- [ ] T015 [US1] Implement `POST /temperature-readings` single-record endpoint: `Depends(ApiKeyValidator)`, `Depends(RateLimiter)`, delegate to `TemperatureService`; return HTTP 503 if `KafkaUnavailableError` raised (FR-008a) — repo: `sapphire-event-ingestion-api` `src/routers/temperature.py`
-- [ ] T016 [US1] Implement `POST /temperature-readings/batch` endpoint: iterate `TemperatureBatchRequest.readings`, call `TemperatureService` per record, collect per-record results (FR-005/006); return partial-success response — repo: `sapphire-event-ingestion-api` `src/routers/temperature.py`
-- [ ] T017 [US1] Register `temperature` router in app entry point — repo: `sapphire-event-ingestion-api` `src/main.py`
-- [ ] T018 [P] [US1] Unit tests for `TemperatureService`: valid reading, out-of-range Celsius, out-of-range Fahrenheit, future timestamp, historical timestamp, Kafka failure → 503 — repo: `sapphire-event-ingestion-api` `tests/unit/test_temperature_service.py`
-- [ ] T019 [P] [US1] Unit tests for `ApiKeyValidator` and `RateLimiter` dependencies — repo: `sapphire-event-ingestion-api` `tests/unit/test_dependencies.py`
-- [ ] T020 [P] [US1] Integration test (tagged `pytest.mark.integration`): full round-trip `POST /temperature-readings` → Kafka topic (Testcontainers Kafka) — repo: `sapphire-event-ingestion-api` `tests/integration/test_temperature_ingestion.py`
+- [x] T009 [P] [US1] Create Pydantic v2 models `TemperatureReading` and `TemperatureBatchRequest` — repo: `sapphire-event-ingestion-api` `src/models/temperature.py`
+- [x] T010 [P] [US1] Create `TemperatureConfig` dataclass (physiological range, rate limit) bound to env vars via Pydantic `BaseSettings` — repo: `sapphire-event-ingestion-api` `src/config/temperature_config.py`
+- [x] T011 [P] [US1] Implement `ApiKeyValidator` FastAPI dependency: Redis hash lookup of hashed API key → user_id; return HTTP 401 if missing/invalid — repo: `sapphire-event-ingestion-api` `src/dependencies/api_key.py`
+- [x] T012 [P] [US1] Implement `RateLimiter` FastAPI dependency: Redis sliding window (INCR+EXPIRE per minute bucket per key), raise HTTP 429 with `Retry-After` on breach — repo: `sapphire-event-ingestion-api` `src/dependencies/rate_limiter.py`
+- [x] T013 [US1] Implement `TemperatureProducer`: Avro-encode `TemperatureReadingEvent` and publish to `health-metrics.temperature`; on broker failure catch `confluent_kafka.KafkaException` (or `confluent_kafka.KafkaError`) and re-raise as `KafkaUnavailableError`; bare `except:` is FORBIDDEN per constitution §I Python — repo: `sapphire-event-ingestion-api` `src/kafka/temperature_producer.py`
+- [x] T014 [US1] Implement `TemperatureService`: validate value against configured range (FR-003), reject future timestamps >5 min (FR-007), accept historical timestamps (FR-008), call producer; emit `temperature_readings_ingested_total` and `temperature_readings_rejected_total` OTEL counters (FR-028/029) — repo: `sapphire-event-ingestion-api` `src/services/temperature_service.py`
+- [x] T015 [US1] Implement `POST /temperature-readings` single-record endpoint: `Depends(ApiKeyValidator)`, `Depends(RateLimiter)`, delegate to `TemperatureService`; return HTTP 503 if `KafkaUnavailableError` raised (FR-008a) — repo: `sapphire-event-ingestion-api` `src/routers/temperature.py`
+- [x] T016 [US1] Implement `POST /temperature-readings/batch` endpoint: iterate `TemperatureBatchRequest.readings`, call `TemperatureService` per record, collect per-record results (FR-005/006); return partial-success response — repo: `sapphire-event-ingestion-api` `src/routers/temperature.py`
+- [x] T017 [US1] Register `temperature` router in app entry point — repo: `sapphire-event-ingestion-api` `src/main.py`
+- [x] T018 [P] [US1] Unit tests for `TemperatureService`: valid reading, out-of-range Celsius, out-of-range Fahrenheit, future timestamp, historical timestamp, Kafka failure → 503 — repo: `sapphire-event-ingestion-api` `tests/unit/test_temperature_service.py`
+- [x] T019 [P] [US1] Unit tests for `ApiKeyValidator` and `RateLimiter` dependencies — repo: `sapphire-event-ingestion-api` `tests/unit/test_dependencies.py`
+- [x] T020 [P] [US1] Integration test (tagged `pytest.mark.integration`): full round-trip `POST /temperature-readings` → Kafka topic (Testcontainers Kafka) — repo: `sapphire-event-ingestion-api` `tests/integration/test_temperature_ingestion.py`
 
 **Checkpoint**: US1 fully functional. Device submitters can authenticate and post temperature readings. Invalid submissions rejected. Events appear on Kafka topic.
 
@@ -75,11 +75,11 @@
 
 ### Implementation for User Story 2
 
-- [ ] T021 [US2] Author `connectors/temperature-sink.json`: Kafka Connect JDBC sink config mapping `TemperatureReadingEvent` Avro fields to `temperature_readings` columns — repo: `sapphire-kafka-pipeline` `connectors/temperature-sink.json`
-- [ ] T022 [US2] Verify `temperature_readings` hypertable created by T002 is present; add connector field-mapping validation for all columns defined in `specs/MVWICA-8/data-model.md` (DDL ownership belongs to T002 in Phase 1) — repo: `sapphire-kafka-pipeline` `sql/001_temperature_schema.sql`
-- [ ] T023 [US2] Verify `temperature_daily_rollups` continuous aggregate and refresh policy created by T003 is present; confirm refresh interval (target: daily rollup lag ≤ 1 hour; weekly/monthly ≤ 4 hours) (DDL ownership belongs to T003 in Phase 1) — repo: `sapphire-kafka-pipeline` `sql/002_temperature_rollups.sql`
-- [ ] T024 [US2] Document connector deployment steps and field mapping in `specs/MVWICA-8/quickstart.md` Step 3 (update if needed)
-- [ ] T025 [P] [US2] Integration test (Docker Compose): publish 5 events to topic, assert all appear in `temperature_readings` within 10 s — repo: `sapphire-kafka-pipeline` `tests/integration/test_temperature_sink.py` (or shell/curl test)
+- [x] T021 [US2] Author `connectors/temperature-sink.json`: Kafka Connect JDBC sink config mapping `TemperatureReadingEvent` Avro fields to `temperature_readings` columns — repo: `sapphire-kafka-pipeline` `connectors/temperature-sink.json`
+- [x] T022 [US2] Verify `temperature_readings` hypertable created by T002 is present; add connector field-mapping validation for all columns defined in `specs/MVWICA-8/data-model.md` (DDL ownership belongs to T002 in Phase 1) — repo: `sapphire-kafka-pipeline` `sql/001_temperature_schema.sql`
+- [x] T023 [US2] Verify `temperature_daily_rollups` continuous aggregate and refresh policy created by T003 is present; confirm refresh interval (target: daily rollup lag ≤ 1 hour; weekly/monthly ≤ 4 hours) (DDL ownership belongs to T003 in Phase 1) — repo: `sapphire-kafka-pipeline` `sql/002_temperature_rollups.sql`
+- [x] T024 [US2] Document connector deployment steps and field mapping in `specs/MVWICA-8/quickstart.md` Step 3 (update if needed)
+- [x] T025 [P] [US2] Integration test (Docker Compose): publish 5 events to topic, assert all appear in `temperature_readings` within 10 s — repo: `sapphire-kafka-pipeline` `tests/integration/test_temperature_sink.py` (or shell/curl test)
 
 **Checkpoint**: US2 complete. Temperature events flow from Kafka to PostgreSQL automatically. Rollup aggregates materialise on schedule.
 
@@ -95,14 +95,14 @@
 
 ### Implementation for User Story 3
 
-- [ ] T026 [P] [US3] Create `TemperatureChartRequest` and `TemperatureChartResponse` and `TemperatureDataPoint` Java record DTOs per `specs/MVWICA-8/data-model.md` — repo: `sapphire-charting-api` `src/main/java/.../temperature/dto/`
-- [ ] T027 [P] [US3] Create `ChartRange` enum (DAY, WEEK, MONTH) if not already present — repo: `sapphire-charting-api` `src/main/java/.../temperature/dto/ChartRange.java`
-- [ ] T028 [US3] Implement `TemperatureChartRepository`: `time_bucket` query against `temperature_readings` for DAY range; query against `temperature_daily_rollups` for WEEK/MONTH; optional `device_source_id` filter; return empty list when no data (FR-018) — repo: `sapphire-charting-api` `src/main/java/.../temperature/TemperatureChartRepository.java`
-- [ ] T029 [US3] Implement `TemperatureChartService`: delegate to repository, map results to `TemperatureChartResponse`; include temperature in analytics export registry (FR-019) — repo: `sapphire-charting-api` `src/main/java/.../temperature/TemperatureChartService.java`
-- [ ] T030 [US3] Implement `TemperatureChartController`: `GET /charts/temperature`, validate request params, delegate to service, return response — repo: `sapphire-charting-api` `src/main/java/.../temperature/TemperatureChartController.java`
-- [ ] T031 [P] [US3] `@WebMvcTest` for `TemperatureChartController`: valid request, empty-range response, missing-param 400 — repo: `sapphire-charting-api` `src/test/java/.../temperature/TemperatureChartControllerTest.java`
-- [ ] T032 [P] [US3] Unit test `TemperatureChartService` with mocked repository (80% line coverage, 100% service layer) — repo: `sapphire-charting-api` `src/test/java/.../temperature/TemperatureChartServiceTest.java`
-- [ ] T033 [P] [US3] Integration test (`@IntegrationTest`, Testcontainers PostgreSQL/TimescaleDB): seed data, call service, assert aggregates — repo: `sapphire-charting-api` `src/test/java/.../temperature/TemperatureChartRepositoryIntegrationTest.java`
+- [x] T026 [P] [US3] Create `TemperatureChartRequest` and `TemperatureChartResponse` and `TemperatureDataPoint` Java record DTOs per `specs/MVWICA-8/data-model.md` — repo: `sapphire-charting-api` `src/main/java/.../temperature/dto/`
+- [x] T027 [P] [US3] Create `ChartRange` enum (DAY, WEEK, MONTH) if not already present — repo: `sapphire-charting-api` `src/main/java/.../temperature/dto/ChartRange.java`
+- [x] T028 [US3] Implement `TemperatureChartRepository`: `time_bucket` query against `temperature_readings` for DAY range; query against `temperature_daily_rollups` for WEEK/MONTH; optional `device_source_id` filter; return empty list when no data (FR-018) — repo: `sapphire-charting-api` `src/main/java/.../temperature/TemperatureChartRepository.java`
+- [x] T029 [US3] Implement `TemperatureChartService`: delegate to repository, map results to `TemperatureChartResponse`; include temperature in analytics export registry (FR-019) — repo: `sapphire-charting-api` `src/main/java/.../temperature/TemperatureChartService.java`
+- [x] T030 [US3] Implement `TemperatureChartController`: `GET /charts/temperature`, validate request params, delegate to service, return response — repo: `sapphire-charting-api` `src/main/java/.../temperature/TemperatureChartController.java`
+- [x] T031 [P] [US3] `@WebMvcTest` for `TemperatureChartController`: valid request, empty-range response, missing-param 400 — repo: `sapphire-charting-api` `src/test/java/.../temperature/TemperatureChartControllerTest.java`
+- [x] T032 [P] [US3] Unit test `TemperatureChartService` with mocked repository (80% line coverage, 100% service layer) — repo: `sapphire-charting-api` `src/test/java/.../temperature/TemperatureChartServiceTest.java`
+- [x] T033 [P] [US3] Integration test (`@IntegrationTest`, Testcontainers PostgreSQL/TimescaleDB): seed data, call service, assert aggregates — repo: `sapphire-charting-api` `src/test/java/.../temperature/TemperatureChartRepositoryIntegrationTest.java`
 
 **Checkpoint**: US3 complete. `GET /charts/temperature` returns correct aggregated trend data independently of the UI.
 
@@ -116,28 +116,28 @@
 
 ### Sub-track A: sapphire-user-service (Jira: MVWICA-15)
 
-- [ ] T034 [P] [US4] Expose `temperature_unit_preference` field on user profile GET response DTO — repo: `sapphire-user-service` (extend existing user profile record/DTO)
-- [ ] T035 [P] [US4] Add `PATCH /users/{id}/preferences` endpoint (or extend existing profile PATCH) to update `temperature_unit_preference`; validate enum (CELSIUS|FAHRENHEIT) — repo: `sapphire-user-service` (controller + service + repository)
-- [ ] T036 [P] [US4] Unit test `temperature_unit_preference` PATCH and GET (100% service layer) — repo: `sapphire-user-service` test class for preferences
+- [x] T034 [P] [US4] Expose `temperature_unit_preference` field on user profile GET response DTO — repo: `sapphire-user-service` (extend existing user profile record/DTO)
+- [x] T035 [P] [US4] Add `PATCH /users/{id}/preferences` endpoint (or extend existing profile PATCH) to update `temperature_unit_preference`; validate enum (CELSIUS|FAHRENHEIT) — repo: `sapphire-user-service` (controller + service + repository)
+- [x] T036 [P] [US4] Unit test `temperature_unit_preference` PATCH and GET (100% service layer) — repo: `sapphire-user-service` test class for preferences
 
 ### Sub-track B: sapphire-bff-api (Jira: MVWICA-12)
 
-- [ ] T037 [P] [US4] Add `temperature.graphql` SDL file with `TemperatureUnit`, `ChartRange`, `TemperatureDataPoint`, `TemperatureChartData` types; `temperatureChart` query; `updateTemperatureUnitPreference` mutation per `specs/MVWICA-8/contracts/bff-schema-additions.graphql` — repo: `sapphire-bff-api` `src/schema/temperature.graphql`
-- [ ] T038 [P] [US4] Implement `TemperatureDataSource`: typed HTTP client calling `GET /charts/temperature` on `sapphire-charting-api`; configured via environment `CHARTING_API_URL` — repo: `sapphire-bff-api` `src/datasources/TemperatureDataSource.ts`
-- [ ] T039 [US4] Implement `temperature.resolver.ts`: `temperatureChart` query validates JWT claims, extracts `userId`, delegates to `TemperatureDataSource`; `updateTemperatureUnitPreference` mutation calls `sapphire-user-service` PATCH — repo: `sapphire-bff-api` `src/resolvers/temperature.resolver.ts`
-- [ ] T040 [US4] Register `TemperatureDataSource` in Apollo Server context; register resolver — repo: `sapphire-bff-api` `src/server.ts` or equivalent
-- [ ] T041 [P] [US4] GraphQL schema contract test: assert no existing query is broken; `temperatureChart` and `updateTemperatureUnitPreference` present in introspection — repo: `sapphire-bff-api` `tests/contract/temperature.contract.test.ts`
-- [ ] T042 [P] [US4] Resolver unit test: `temperatureChart` with mocked `TemperatureDataSource` (valid JWT, missing JWT → error); `updateTemperatureUnitPreference` (success, invalid enum) — repo: `sapphire-bff-api` `tests/unit/temperature.resolver.test.ts`
+- [x] T037 [P] [US4] Add `temperature.graphql` SDL file with `TemperatureUnit`, `ChartRange`, `TemperatureDataPoint`, `TemperatureChartData` types; `temperatureChart` query; `updateTemperatureUnitPreference` mutation per `specs/MVWICA-8/contracts/bff-schema-additions.graphql` — repo: `sapphire-bff-api` `src/schema/temperature.graphql`
+- [x] T038 [P] [US4] Implement `TemperatureDataSource`: typed HTTP client calling `GET /charts/temperature` on `sapphire-charting-api`; configured via environment `CHARTING_API_URL` — repo: `sapphire-bff-api` `src/datasources/TemperatureDataSource.ts`
+- [x] T039 [US4] Implement `temperature.resolver.ts`: `temperatureChart` query validates JWT claims, extracts `userId`, delegates to `TemperatureDataSource`; `updateTemperatureUnitPreference` mutation calls `sapphire-user-service` PATCH — repo: `sapphire-bff-api` `src/resolvers/temperature.resolver.ts`
+- [x] T040 [US4] Register `TemperatureDataSource` in Apollo Server context; register resolver — repo: `sapphire-bff-api` `src/server.ts` or equivalent
+- [x] T041 [P] [US4] GraphQL schema contract test: assert no existing query is broken; `temperatureChart` and `updateTemperatureUnitPreference` present in introspection — repo: `sapphire-bff-api` `tests/contract/temperature.contract.test.ts`
+- [x] T042 [P] [US4] Resolver unit test: `temperatureChart` with mocked `TemperatureDataSource` (valid JWT, missing JWT → error); `updateTemperatureUnitPreference` (success, invalid enum) — repo: `sapphire-bff-api` `tests/unit/temperature.resolver.test.ts`
 
 ### Sub-track C: Sapphire UI (Jira: MVWICA-13)
 
-- [ ] T043 [P] [US4] Create co-located feature directory `src/features/body-temperature/`; add `BodyTemperatureChart.types.ts` with `BodyTemperatureChartProps`, `TemperatureUnit`, `ChartRange` interfaces — repo: `Sapphire` `src/features/body-temperature/BodyTemperatureChart.types.ts`
-- [ ] T044 [P] [US4] Create `temperatureChart.graphql` Apollo query document for `temperatureChart` query and `updateTemperatureUnitPreference` mutation — repo: `Sapphire` `src/features/body-temperature/queries/temperatureChart.graphql`
-- [ ] T045 [US4] Implement `useBodyTemperature` custom hook: Apollo `useQuery` for `temperatureChart` with `cache-and-network` policy; read `temperature_unit_preference` from user profile; `useMutation` for `updateTemperatureUnitPreference`; encode selected range in URL query param (FR-022) — repo: `Sapphire` `src/features/body-temperature/useBodyTemperature.ts`
-- [ ] T046 [US4] Implement `BodyTemperatureChart` component: render loading skeleton matching chart dimensions during fetch; render error boundary with "Try again" action on failure; render empty-state message when `dataPoints` is empty; render trend chart with min/max/avg data points and unit label; time-range selector (DAY/WEEK/MONTH) updates URL param; Celsius/Fahrenheit toggle calls `updateTemperatureUnitPreference` mutation and updates display immediately (FR-020 through FR-025) — repo: `Sapphire` `src/features/body-temperature/BodyTemperatureChart.tsx`
-- [ ] T047 [US4] Add Body Temperature entry to the health dashboard metrics list; wire to `BodyTemperatureChart` route/view — repo: `Sapphire` (existing metrics list component)
-- [ ] T048 [P] [US4] RTL unit tests for `BodyTemperatureChart`: loading skeleton, error boundary with retry, empty state, chart with data, unit toggle fires mutation (70% coverage minimum) — repo: `Sapphire` `src/features/body-temperature/BodyTemperatureChart.test.tsx`
-- [ ] T049 [P] [US4] RTL unit tests for `useBodyTemperature` hook: loading, error, data, unit toggle, range change updates URL — repo: `Sapphire` `src/features/body-temperature/useBodyTemperature.test.ts`
+- [x] T043 [P] [US4] Create co-located feature directory `src/features/body-temperature/`; add `BodyTemperatureChart.types.ts` with `BodyTemperatureChartProps`, `TemperatureUnit`, `ChartRange` interfaces — repo: `Sapphire` `src/features/body-temperature/BodyTemperatureChart.types.ts`
+- [x] T044 [P] [US4] Create `temperatureChart.graphql` Apollo query document for `temperatureChart` query and `updateTemperatureUnitPreference` mutation — repo: `Sapphire` `src/features/body-temperature/queries/temperatureChart.graphql`
+- [x] T045 [US4] Implement `useBodyTemperature` custom hook: Apollo `useQuery` for `temperatureChart` with `cache-and-network` policy; read `temperature_unit_preference` from user profile; `useMutation` for `updateTemperatureUnitPreference`; encode selected range in URL query param (FR-022) — repo: `Sapphire` `src/features/body-temperature/useBodyTemperature.ts`
+- [x] T046 [US4] Implement `BodyTemperatureChart` component: render loading skeleton matching chart dimensions during fetch; render error boundary with "Try again" action on failure; render empty-state message when `dataPoints` is empty; render trend chart with min/max/avg data points and unit label; time-range selector (DAY/WEEK/MONTH) updates URL param; Celsius/Fahrenheit toggle calls `updateTemperatureUnitPreference` mutation and updates display immediately (FR-020 through FR-025) — repo: `Sapphire` `src/features/body-temperature/BodyTemperatureChart.tsx`
+- [x] T047 [US4] Add Body Temperature entry to the health dashboard metrics list; wire to `BodyTemperatureChart` route/view — repo: `Sapphire` (existing metrics list component)
+- [x] T048 [P] [US4] RTL unit tests for `BodyTemperatureChart`: loading skeleton, error boundary with retry, empty state, chart with data, unit toggle fires mutation (70% coverage minimum) — repo: `Sapphire` `src/features/body-temperature/BodyTemperatureChart.test.tsx`
+- [x] T049 [P] [US4] RTL unit tests for `useBodyTemperature` hook: loading, error, data, unit toggle, range change updates URL — repo: `Sapphire` `src/features/body-temperature/useBodyTemperature.test.ts`
 
 **Checkpoint**: US4 complete. End users can see Body Temperature on the dashboard, view trend charts, switch time ranges, and toggle units. Preference persists across sessions.
 
@@ -153,12 +153,12 @@
 
 ### Implementation for User Story 5
 
-- [ ] T050 [P] [US5] Create `TemperatureThresholdConfig` `@ConfigurationProperties` class binding `TEMP_HIGH_ALERT_C`, `TEMP_LOW_ALERT_C` (Celsius; Fahrenheit equivalents derived at runtime) — repo: `sapphire-kafka-streams-consumer` `src/main/java/.../temperature/TemperatureThresholdConfig.java`
-- [ ] T051 [P] [US5] Create `TemperatureAlertEvent` record DTO per `specs/MVWICA-8/data-model.md` (alert_id, user_id, triggered_at, reading_value, reading_unit, threshold_type, threshold_value, device_source_id) — repo: `sapphire-kafka-streams-consumer` `src/main/java/.../temperature/dto/TemperatureAlertEvent.java`
-- [ ] T052 [US5] Implement `TemperatureAlertProcessor`: Kafka Streams topology consuming `health-metrics.temperature`; each consumed Kafka message MUST create a root OTEL span (W3C `traceparent` propagation, per constitution §IV); filter readings exceeding `highAlertThreshold` or below `lowAlertThreshold` (converting Fahrenheit inputs to Celsius for comparison); map to `TemperatureAlertEvent`; produce to existing alert topic; emit `temperature_alerts_generated_total` OTEL counter (FR-030) — repo: `sapphire-kafka-streams-consumer` `src/main/java/.../temperature/TemperatureAlertProcessor.java`
-- [ ] T053 [US5] Register `TemperatureAlertProcessor` topology in the Kafka Streams application startup — repo: `sapphire-kafka-streams-consumer` (existing `StreamsConfig` or application entry point)
-- [ ] T054 [P] [US5] Unit tests for `TemperatureAlertProcessor`: reading above high threshold → alert produced; reading below low threshold → alert produced; reading within range → no alert; Fahrenheit input converted correctly (80% line coverage, 100% processor class) — repo: `sapphire-kafka-streams-consumer` `src/test/java/.../temperature/TemperatureAlertProcessorTest.java`
-- [ ] T055 [P] [US5] Integration test (`@IntegrationTest`, Testcontainers Kafka): publish threshold-breaching reading, assert alert on alert topic within 15 s — repo: `sapphire-kafka-streams-consumer` `src/test/java/.../temperature/TemperatureAlertProcessorIntegrationTest.java`
+- [x] T050 [P] [US5] Create `TemperatureThresholdConfig` `@ConfigurationProperties` class binding `TEMP_HIGH_ALERT_C`, `TEMP_LOW_ALERT_C` (Celsius; Fahrenheit equivalents derived at runtime) — repo: `sapphire-kafka-streams-consumer` `src/main/java/.../temperature/TemperatureThresholdConfig.java`
+- [x] T051 [P] [US5] Create `TemperatureAlertEvent` record DTO per `specs/MVWICA-8/data-model.md` (alert_id, user_id, triggered_at, reading_value, reading_unit, threshold_type, threshold_value, device_source_id) — repo: `sapphire-kafka-streams-consumer` `src/main/java/.../temperature/dto/TemperatureAlertEvent.java`
+- [x] T052 [US5] Implement `TemperatureAlertProcessor`: Kafka Streams topology consuming `health-metrics.temperature`; each consumed Kafka message MUST create a root OTEL span (W3C `traceparent` propagation, per constitution §IV); filter readings exceeding `highAlertThreshold` or below `lowAlertThreshold` (converting Fahrenheit inputs to Celsius for comparison); map to `TemperatureAlertEvent`; produce to existing alert topic; emit `temperature_alerts_generated_total` OTEL counter (FR-030) — repo: `sapphire-kafka-streams-consumer` `src/main/java/.../temperature/TemperatureAlertProcessor.java`
+- [x] T053 [US5] Register `TemperatureAlertProcessor` topology in the Kafka Streams application startup — repo: `sapphire-kafka-streams-consumer` (existing `StreamsConfig` or application entry point)
+- [x] T054 [P] [US5] Unit tests for `TemperatureAlertProcessor`: reading above high threshold → alert produced; reading below low threshold → alert produced; reading within range → no alert; Fahrenheit input converted correctly (80% line coverage, 100% processor class) — repo: `sapphire-kafka-streams-consumer` `src/test/java/.../temperature/TemperatureAlertProcessorTest.java`
+- [x] T055 [P] [US5] Integration test (`@IntegrationTest`, Testcontainers Kafka): publish threshold-breaching reading, assert alert on alert topic within 15 s — repo: `sapphire-kafka-streams-consumer` `src/test/java/.../temperature/TemperatureAlertProcessorIntegrationTest.java`
 
 **Checkpoint**: US5 complete. Platform operators can configure thresholds; users receive real-time alerts on fever or hypothermia boundary breaches.
 
@@ -168,13 +168,13 @@
 
 **Purpose**: Documentation, OTEL env var confirmation, regression protection, and E2E test coverage.
 
-- [ ] T056 [P] Verify `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_SERVICE_NAME`, `OTEL_DEPLOYMENT_ENVIRONMENT` are present in Docker Compose configs for `sapphire-event-ingestion-api`, `sapphire-charting-api`, `sapphire-kafka-streams-consumer`, `sapphire-bff-api` — all affected repos
-- [ ] T057 [P] Update `specs/MVWICA-8/quickstart.md` if any steps changed during implementation (connector config path, env var names, port numbers)
-- [ ] T058 [P] Update OpenAPI docs `specs/MVWICA-8/contracts/ingestion-api.yaml` and `charting-api.yaml` if any endpoint signatures changed during implementation
-- [ ] T059 [P] Add E2E Playwright test: End User logs in, navigates to Body Temperature chart, views data, toggles unit — repo: `sapphire-playwright` (new test file)
-- [ ] T060 [P] Add E2E Playwright test: Unit preference persists across logout and re-login — repo: `sapphire-playwright`
-- [ ] T061 Run full regression: existing health metric types (blood pressure, SpO2, activity) must pass unchanged test suites (SC-010) — all affected repos
-- [ ] T062 [P] Run automated WCAG AA accessibility audit on `BodyTemperatureChart` component using `axe-core` (via `@axe-core/react` in RTL test or Playwright axe plugin in T059 E2E test); assert zero violations at AA level (SC-009) — repo: `Sapphire` `src/features/body-temperature/BodyTemperatureChart.test.tsx` (amend T048) and `sapphire-playwright` (amend T059)
+- [x] T056 [P] Verify `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_SERVICE_NAME`, `OTEL_DEPLOYMENT_ENVIRONMENT` are present in Docker Compose configs for `sapphire-event-ingestion-api`, `sapphire-charting-api`, `sapphire-kafka-streams-consumer`, `sapphire-bff-api` — all affected repos
+- [x] T057 [P] Update `specs/MVWICA-8/quickstart.md` if any steps changed during implementation (connector config path, env var names, port numbers)
+- [x] T058 [P] Update OpenAPI docs `specs/MVWICA-8/contracts/ingestion-api.yaml` and `charting-api.yaml` if any endpoint signatures changed during implementation
+- [x] T059 [P] Add E2E Playwright test: End User logs in, navigates to Body Temperature chart, views data, toggles unit — repo: `sapphire-playwright` (new test file)
+- [x] T060 [P] Add E2E Playwright test: Unit preference persists across logout and re-login — repo: `sapphire-playwright`
+- [x] T061 Run full regression: existing health metric types (blood pressure, SpO2, activity) must pass unchanged test suites (SC-010) — all affected repos
+- [x] T062 [P] Run automated WCAG AA accessibility audit on `BodyTemperatureChart` component using `axe-core` (via `@axe-core/react` in RTL test or Playwright axe plugin in T059 E2E test); assert zero violations at AA level (SC-009) — repo: `Sapphire` `src/features/body-temperature/BodyTemperatureChart.test.tsx` (amend T048) and `sapphire-playwright` (amend T059)
 
 ---
 
