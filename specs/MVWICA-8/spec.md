@@ -30,9 +30,17 @@
 
 ## User Scenarios & Testing *(mandatory)*
 
+### Personas
+
+- **End User**: An authenticated platform user who views body temperature history, trend charts, and receives alerts via the health dashboard. Authenticates via Keycloak OIDC/PKCE (existing platform auth).
+- **Device Submitter**: A smart device or third-party health API that posts temperature readings to the ingestion endpoint on behalf of an end user. Authenticates via a per-device or per-partner API key (`X-API-Key` header). Has no access to the dashboard or chart endpoints.
+- **Platform Operator**: An administrator who configures platform-wide temperature alert thresholds and physiological validation ranges via environment/config. Does not interact with the UI or ingestion endpoint directly.
+
+---
+
 ### User Story 1 - Smart Device Temperature Ingestion (Priority: P1)
 
-A user with a Bluetooth or internet-connected thermometer (e.g., a smart patch or wearable) has their device submit body temperature readings to the platform automatically. The platform accepts each reading — whether submitted individually or in a batch — validates that the value falls within a physiologically acceptable range, converts it to a canonical unit for storage, and records it against the user's account with the device identifier and timestamp. Invalid or out-of-range readings are rejected with a clear error.
+A **Device Submitter** (smart device or third-party health API acting on behalf of an end user) posts body temperature readings to the platform automatically. The platform accepts each reading — whether submitted individually or in a batch — validates that the value falls within a physiologically acceptable range configured by the **Platform Operator**, and records it against the end user's account with the device identifier and timestamp. Invalid or out-of-range readings are rejected with a clear error.
 
 **Why this priority**: Without the ability to ingest temperature data, none of the downstream storage, charting, or UI features can function. This is the foundational capability from which all other stories derive their data. Completing it alone provides integration value to device partners even before the UI is ready.
 
@@ -81,7 +89,7 @@ A user can retrieve trend data for their body temperature across selectable time
 
 ### User Story 4 - Temperature Metric in the Health Dashboard UI (Priority: P4)
 
-A logged-in user opens their health dashboard and sees body temperature listed alongside other health metrics. They can select the temperature metric to view a trend chart with a selectable time range (day, week, month). The chart displays the values in the user's preferred unit (Celsius or Fahrenheit), with a clearly visible unit label and the ability to toggle between units. Loading and empty states are handled gracefully.
+A logged-in **End User** opens their health dashboard and sees body temperature listed alongside other health metrics. They can select the temperature metric to view a trend chart with a selectable time range (day, week, month). The chart displays the values in the user's preferred unit (Celsius or Fahrenheit), with a clearly visible unit label and the ability to toggle between units. Loading and empty states are handled gracefully.
 
 **Why this priority**: The UI is the final delivery layer that makes the feature visible to end users. It depends on all previous stories being complete and is ranked P4 as a result. Once the chart API (P3) is validated, the UI can be built and tested against it independently.
 
@@ -100,9 +108,9 @@ A logged-in user opens their health dashboard and sees body temperature listed a
 
 ### User Story 5 - Temperature Threshold Alerting (Priority: P5)
 
-The platform monitors ingested temperature readings in near-real-time and generates an alert when a reading exceeds a configurable high or low threshold (e.g., fever or hypothermia boundary). Alerts are delivered to the user via the existing notification channel.
+The platform monitors ingested temperature readings in near-real-time and generates an alert when a reading exceeds a threshold configured by the **Platform Operator**. Alerts are delivered to the **End User** via the existing notification channel.
 
-**Why this priority**: Alerting adds proactive health value and reuses the existing Kafka Streams alert pipeline. It is the lowest priority because it is an additive capability that does not block any other story, and the threshold configuration mechanism may need separate governance review.
+**Why this priority**: Alerting adds proactive health value and reuses the existing Kafka Streams alert pipeline. It is the lowest priority because it is an additive capability that does not block any other story. Thresholds are operator-configured platform-wide defaults; per-user threshold customisation is out of scope for this story.
 
 **Independent Test**: Configure a low threshold (e.g., 37.5 °C = alert) for a test user. Submit a temperature reading above that threshold via the ingestion API. Confirm an alert record is created and delivered via the WebSocket notification channel within 15 seconds.
 
@@ -117,12 +125,27 @@ The platform monitors ingested temperature readings in near-real-time and genera
 
 - A device submits a temperature reading with a timestamp in the past (e.g., readings buffered offline). The system must accept the historical timestamp and store it accurately rather than replacing it with the ingestion time.
 - A device submits a temperature reading with a future timestamp (clock skew). The system must reject readings with timestamps more than 5 minutes in the future with a 422 error.
+- A device exceeds the per-key rate limit of 100 requests/minute. The system must return HTTP 429 with a `Retry-After` header indicating when the caller may next submit.
 - A batch submission contains a mix of valid and invalid records. The system must process and persist all valid records while returning per-record errors for invalid ones — a partial batch must not be treated as a complete failure.
 - Simultaneous submissions from the same user on different devices must not cause duplicate records; each must be stored independently with its device-source identifier.
 - The configurable physiological range is updated by an operator while the system is running. Subsequent submissions must use the new range without requiring a service restart.
 - A user requests temperature data for a date range that partially overlaps with available data (e.g., one month range where only two weeks have data). The response must return only the intervals with data and indicate the gap rather than returning zeros.
 - Unit toggling in the UI: rounding differences between Celsius and Fahrenheit conversions must not cause values to drift visibly (e.g., 37.0 °C → 98.6 °F → 37.0 °C round-trip must be stable).
-- A user with no preferred unit set sees a sensible default (platform default unit) without an error.
+- A user with no preferred unit set sees Celsius as the default without an error. If the user's profile cannot be reached to retrieve the preference, the chart falls back to Celsius silently.
+
+---
+
+## Clarifications
+
+### Session 2026-08-12
+
+- Q: How must callers authenticate to the temperature ingestion endpoint? → A: Device/partner API key (per-device or per-partner bearer token or `X-API-Key` header)
+- Q: Which user personas interact with this feature? → A: Three personas — End User (Keycloak OIDC, views dashboard/charts/alerts), Device Submitter (API key, posts readings), Platform Operator (configures thresholds and physiological range)
+- Q: Does Celsius/Fahrenheit preference apply per-user or per-region? → A: Per-user preference stored in user profile; default is Celsius if no preference is set
+- Q: What is the ingestion endpoint's behaviour when the Kafka broker is temporarily unavailable? → A: Return HTTP 503; device is responsible for retrying
+- Q: Which OTEL business-metric counters are required for temperature? → A: Three counters: `temperature_readings_ingested_total`, `temperature_readings_rejected_total`, `temperature_alerts_generated_total`
+- Q: Who can configure temperature alert thresholds? → A: Platform-wide defaults only — thresholds are operator-configured; no per-user customisation in this story
+- Q: What rate limiting policy applies to the ingestion endpoint? → A: Per API key rate limit — 100 requests/minute per key; excess requests receive HTTP 429
 
 ---
 
@@ -131,7 +154,7 @@ The platform monitors ingested temperature readings in near-real-time and genera
 ### Functional Requirements
 
 **Data Ingestion**
-- **FR-001**: The system MUST accept body temperature readings submitted by integrated smart devices and third-party health APIs via a REST endpoint.
+- **FR-001**: The system MUST accept body temperature readings submitted by integrated smart devices and third-party health APIs via a REST endpoint. Callers MUST authenticate using a per-device or per-partner API key, passed as a bearer token or `X-API-Key` header. Requests without a valid API key MUST be rejected with HTTP 401. Each API key MUST be rate-limited to 100 requests per minute; requests exceeding this limit MUST be rejected with HTTP 429.
 - **FR-002**: The ingestion endpoint MUST support both Celsius and Fahrenheit input units and preserve the submitted unit in the stored record.
 - **FR-003**: The system MUST validate each temperature value against a configurable physiological range. Values outside the range MUST be rejected with a descriptive error message stating the configured bounds.
 - **FR-004**: Each temperature record MUST be associated with: user identifier, measurement timestamp, value, unit, device source identifier, and ingestion source. Measurement method is optional.
@@ -139,6 +162,7 @@ The platform monitors ingested temperature readings in near-real-time and genera
 - **FR-006**: In batch mode, partial failures MUST be handled gracefully: valid records in the batch MUST be processed and a per-record result summary returned.
 - **FR-007**: Readings with timestamps more than 5 minutes in the future MUST be rejected with HTTP 422.
 - **FR-008**: Historical readings (past timestamps) MUST be accepted and stored with the original measurement timestamp.
+- **FR-008a**: If the Kafka broker is unavailable when a temperature reading is submitted, the ingestion endpoint MUST return HTTP 503 with an error body indicating the service is temporarily unavailable. The caller is responsible for retrying. No event may be silently dropped during a Kafka outage.
 
 **Data Model / Schema**
 - **FR-009**: A temperature metric type MUST be added to the existing health metrics catalog, consistent with the schema of existing metric types (blood pressure, SpO2, activity).
@@ -161,19 +185,24 @@ The platform monitors ingested temperature readings in near-real-time and genera
 - **FR-020**: The health dashboard metrics list MUST display Body Temperature as a selectable metric entry.
 - **FR-021**: Selecting the Body Temperature metric MUST open a trend chart view with a default time range of "day".
 - **FR-022**: The chart MUST support selectable time ranges: day, week, and month. Switching ranges MUST update the chart without a full page reload.
-- **FR-023**: The chart MUST display values in the user's preferred unit (Celsius or Fahrenheit), with the unit clearly labelled.
-- **FR-024**: The user MUST be able to toggle the display unit between Celsius and Fahrenheit from within the chart view; all displayed values MUST update immediately upon toggle.
+- **FR-023**: The chart MUST display values in the **End User**'s preferred unit (Celsius or Fahrenheit) stored in their user profile, with the unit clearly labelled. If no preference is stored, the chart MUST default to Celsius.
+- **FR-024**: The **End User** MUST be able to toggle the display unit between Celsius and Fahrenheit from within the chart view; the selected unit MUST be persisted to the user's profile so it is applied on subsequent sessions. All displayed values MUST update immediately upon toggle.
 - **FR-025**: The chart component MUST implement loading skeleton, error boundary with "Try again" action, and empty-state views as per platform UX standards.
 
 **Alerting**
 - **FR-026**: The platform MUST generate an alert when a temperature reading exceeds a configurable high or low threshold.
 - **FR-027**: Temperature threshold alerts MUST be published to the existing alert Kafka topic and delivered to the user via the existing WebSocket notification channel.
 
+**Observability**
+- **FR-028**: The ingestion service MUST emit a custom OTEL counter `temperature_readings_ingested_total` incremented for each successfully published temperature event.
+- **FR-029**: The ingestion service MUST emit a custom OTEL counter `temperature_readings_rejected_total` incremented for each rejected reading (validation failure, auth failure, or Kafka unavailability), labelled by rejection reason.
+- **FR-030**: The Kafka Streams alerting component MUST emit a custom OTEL counter `temperature_alerts_generated_total` incremented for each temperature threshold alert published to the alert topic.
+
 ### Key Entities
 
 - **Temperature Reading**: A single body temperature measurement event. Attributes: user ID, timestamp, value (numeric), unit (Celsius | Fahrenheit), device source ID, ingestion source, measurement method (optional). This is the atomic unit flowing from ingestion through to storage and charting.
 - **Temperature Rollup**: An aggregated summary of temperature readings for a given user and time interval (day/week/month). Attributes: user ID, interval start, interval end, minimum value, maximum value, average value, unit, record count.
-- **Temperature Threshold Configuration**: A platform-level (or future per-user) configuration defining the acceptable physiological range and alert thresholds. Attributes: metric type (temperature), low threshold, high threshold, unit, effective date.
+- **Temperature Threshold Configuration**: A platform-level configuration (operator-managed via environment or config file) defining the acceptable physiological range and alert thresholds. Per-user threshold customisation is explicitly out of scope for this story. Attributes: metric type (temperature), low alert threshold, high alert threshold, physiological low bound, physiological high bound, unit, effective date.
 
 ---
 
