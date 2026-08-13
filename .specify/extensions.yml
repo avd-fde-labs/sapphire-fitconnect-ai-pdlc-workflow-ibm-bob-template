@@ -1,0 +1,11 @@
+hooks: {}
+# All PDLC approval gates are inlined directly into the speckit command files.
+# No hooks are needed — the gate logic runs inside each command's PDLC section:
+#
+#   Spec approval gate  → speckit.clarify  Phase 3B, speckit.plan Phase 4 Entry Gates
+#   Plan approval gate  → speckit.plan     Phase 4B (PDLC Post-Plan)
+#   Tasks approval gate → speckit.analyze  Phase 7B (PDLC Post-Analyze)
+#   Impl readiness      → speckit.analyze  CHECKPOINT 3 (PDLC Post-Analyze)
+#
+# To add a hook that works without command invocation, use the 'prompt' field only
+# and set 'command' to null or omit it — but note the host must support prompt-only hooks.
