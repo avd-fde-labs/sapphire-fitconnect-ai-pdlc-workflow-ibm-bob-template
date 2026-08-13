@@ -57,6 +57,15 @@ type TemperatureChartData {
 }
 
 # ──────────────────────────────────────────────
+# User type extension — temperature unit preference read path (FR-023)
+# ──────────────────────────────────────────────
+
+extend type User {
+  """The user's stored temperature display unit preference. Null if no preference is set (UI defaults to CELSIUS)."""
+  temperatureUnitPreference: TemperatureUnit
+}
+
+# ──────────────────────────────────────────────
 # Query extensions
 # ──────────────────────────────────────────────
 

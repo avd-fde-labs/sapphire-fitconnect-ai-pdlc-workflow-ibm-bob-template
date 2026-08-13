@@ -7,7 +7,7 @@
 - Last Updated: 2026-08-12
 
 ## CURRENT_STAGE
-PHASE_4B_PENDING
+PHASE_7C_PENDING
 
 ## Completed Phases
 - [x] Phase 1: Constitution Verified
@@ -21,13 +21,13 @@ PHASE_4B_PENDING
 - [x] Phase 4: Plan
 - [x] CHECKPOINT 2A: Submitter Plan Review
 - [x] Phase 4A: Plan PR Raised
-- [ ] Phase 4B: Plan Approved
-- [ ] Phase 5: Child Stories Created
-- [ ] Phase 6A: Tasks Entry Gates
-- [ ] Phase 6B: Tasks
-- [ ] CHECKPOINT 2B: Submitter Tasks Review
-- [ ] Phase 7A: Analysis Entry Gates
-- [ ] Phase 7B: Analyze
+- [x] Phase 4B: Plan Approved
+- [x] Phase 5: Child Stories Created
+- [x] Phase 6A: Tasks Entry Gates
+- [x] Phase 6B: Tasks
+- [x] CHECKPOINT 2B: Submitter Tasks Review
+- [x] Phase 7A: Analysis Entry Gates
+- [x] Phase 7B: Analyze
 - [ ] Phase 7C: Tasks PR Raised
 - [ ] Phase 7D: Tasks PR Approved
 - [ ] Phase 7E: Jira Stories Updated with Tasks
@@ -44,16 +44,22 @@ PHASE_4B_PENDING
 - Spec PR: https://github.com/avd-fde-labs/sapphire-fitconnect-ai-pdlc-workflow-ibm-bob-template/pull/1
 - Spec Approval (`product_owner`): avdorp — merged 2026-08-13T13:45:43Z
 - Plan PR: https://github.com/avd-fde-labs/sapphire-fitconnect-ai-pdlc-workflow-ibm-bob-template/pull/2
-- Plan Approval (`fde`): (pending)
+- Plan Approval (`fde`): avdorp — merged 2026-08-13T14:07:25Z
 - Tasks PR: (not yet raised)
 - Tasks Approval (`fde`): (pending)
 - Implementation PRs: (pending)
 
 ## Child Stories
-(populated in Phase 5 — one `<repo>: <child-key>` per affected repo)
+sapphire-event-ingestion-api: MVWICA-9
+sapphire-kafka-pipeline: MVWICA-10
+sapphire-charting-api: MVWICA-11
+sapphire-bff-api: MVWICA-12
+Sapphire: MVWICA-13
+sapphire-kafka-streams-consumer: MVWICA-14
+sapphire-user-service: MVWICA-15
 
 ## Affected Repos
-sapphire-event-ingestion-api, sapphire-kafka-pipeline, sapphire-charting-api, sapphire-bff-api, Sapphire, sapphire-kafka-streams-consumer
+sapphire-event-ingestion-api, sapphire-kafka-pipeline, sapphire-charting-api, sapphire-bff-api, Sapphire, sapphire-kafka-streams-consumer, sapphire-user-service
 
 ## Story Summary
 MVWICA-8 adds body temperature as a first-class health metric to the Sapphire platform. The feature spans ingestion (accepting Celsius/Fahrenheit readings from smart devices, validating against configurable physiological ranges, supporting batch and single-record inputs), persistent timeseries storage via Kafka Connect, trend analytics and charting (min/max/average across day/week/month ranges), and a new UI chart component with unit switching. Affected repos are sapphire-event-ingestion-api (ingestion API), sapphire-kafka-pipeline (Kafka→PostgreSQL sink), sapphire-charting-api (chart data generation), sapphire-bff-api (GraphQL BFF), Sapphire (React UI), and sapphire-kafka-streams-consumer (potential threshold alerting).
