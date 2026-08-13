@@ -7,7 +7,7 @@
 - Last Updated: 2026-08-12
 
 ## CURRENT_STAGE
-PHASE_4B_PENDING
+PHASE_6_PENDING
 
 ## Completed Phases
 - [x] Phase 1: Constitution Verified
@@ -21,8 +21,8 @@ PHASE_4B_PENDING
 - [x] Phase 4: Plan
 - [x] CHECKPOINT 2A: Submitter Plan Review
 - [x] Phase 4A: Plan PR Raised
-- [ ] Phase 4B: Plan Approved
-- [ ] Phase 5: Child Stories Created
+- [x] Phase 4B: Plan Approved
+- [x] Phase 5: Child Stories Created
 - [ ] Phase 6A: Tasks Entry Gates
 - [ ] Phase 6B: Tasks
 - [ ] CHECKPOINT 2B: Submitter Tasks Review
@@ -44,13 +44,19 @@ PHASE_4B_PENDING
 - Spec PR: https://github.com/avd-fde-labs/sapphire-fitconnect-ai-pdlc-workflow-ibm-bob-template/pull/1
 - Spec Approval (`product_owner`): avdorp — merged 2026-08-13T13:45:43Z
 - Plan PR: https://github.com/avd-fde-labs/sapphire-fitconnect-ai-pdlc-workflow-ibm-bob-template/pull/2
-- Plan Approval (`fde`): (pending)
+- Plan Approval (`fde`): avdorp — merged 2026-08-13T14:07:25Z
 - Tasks PR: (not yet raised)
 - Tasks Approval (`fde`): (pending)
 - Implementation PRs: (pending)
 
 ## Child Stories
-(populated in Phase 5 — one `<repo>: <child-key>` per affected repo)
+sapphire-event-ingestion-api: MVWICA-9
+sapphire-kafka-pipeline: MVWICA-10
+sapphire-charting-api: MVWICA-11
+sapphire-bff-api: MVWICA-12
+Sapphire: MVWICA-13
+sapphire-kafka-streams-consumer: MVWICA-14
+sapphire-user-service: MVWICA-15
 
 ## Affected Repos
 sapphire-event-ingestion-api, sapphire-kafka-pipeline, sapphire-charting-api, sapphire-bff-api, Sapphire, sapphire-kafka-streams-consumer
